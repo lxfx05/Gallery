@@ -3,9 +3,13 @@ import uuid
 from flask import Flask, request, jsonify, send_from_directory, render_template
 from PIL import Image, ImageEnhance, ImageFilter
 
-app = Flask(__name__)
-UPLOAD_FOLDER = 'static/uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Configuriamo Flask per cercare i file fuori dalla cartella api/
+app = Flask(__name__, 
+            template_folder='../templates', 
+            static_folder='../static')
+
+# Su Vercel l'unica cartella con permessi di scrittura è /tmp
+UPLOAD_FOLDER = '/tmp'
 
 @app.route('/')
 def index():
@@ -26,49 +30,34 @@ def edit():
     values = data['value']
     filepath = os.path.join(UPLOAD_FOLDER, filename)
 
-    # Apri immagine
     img = Image.open(filepath)
 
-    # Lettura valori di modifica
     brightness = float(values.get('brightness', 1))
     contrast = float(values.get('contrast', 1))
     saturation = float(values.get('saturation', 1))
     blur = float(values.get('blur', 0))
     rotate = int(values.get('rotate', 0))
 
-    # Applica luminosità
-    enhancer = ImageEnhance.Brightness(img)
-    img = enhancer.enhance(brightness)
+    img = ImageEnhance.Brightness(img).enhance(brightness)
+    img = ImageEnhance.Contrast(img).enhance(contrast)
+    img = ImageEnhance.Color(img).enhance(saturation)
 
-    # Applica contrasto
-    enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(contrast)
-
-    # Applica saturazione
-    enhancer = ImageEnhance.Color(img)
-    img = enhancer.enhance(saturation)
-
-    # Applica blur
     if blur > 0:
         img = img.filter(ImageFilter.GaussianBlur(radius=blur))
-
-    # Applica rotazione
     if rotate != 0:
         img = img.rotate(rotate, expand=True)
 
-    # Salva immagine temporanea
     temp_filename = str(uuid.uuid4()) + '.png'
     temp_filepath = os.path.join(UPLOAD_FOLDER, temp_filename)
     img.save(temp_filepath)
 
     return jsonify({'temp_filename': temp_filename})
 
-@app.route('/static/uploads/<filename>')
-def uploaded_file(filename):
-    download = request.args.get('download', 'false').lower() == 'true'
-    if download:
-        return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
+# Rotta necessaria per servire le immagini dalla cartella /tmp di Vercel
+@app.route('/get-img/<filename>')
+def serve_image(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5002)
+    app.run(debug=True)
+    
