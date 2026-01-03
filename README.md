@@ -14,7 +14,7 @@ A lightweight, serverless web application built with **Flask** and **Pillow** th
     * **Blur**: Apply Gaussian blur for soft effects.
     * **Rotation**: Rotate images up to 360 degrees.
 * **💾 Instant Download**: Save your masterpiece directly to your device.
-* **☁️ Serverless Optimized**: Uses \`/tmp\` storage for fast, ephemeral processing.
+* **☁️ Serverless Optimized**: Uses `tmp` storage for fast, ephemeral processing.
 
 ---
 
