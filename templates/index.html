@@ -1,72 +1,134 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Editor Immagini</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  #original, #preview { max-width: 100%; margin-top: 10px; }
-  .slider-container { margin: 10px 0; }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Editor Immagini - Vercel</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #444; }
+        #original, #preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 4px; display: block; margin-left: auto; margin-right: auto; }
+        .slider-container { margin: 15px 0; display: flex; align-items: center; }
+        .slider-container label { width: 150px; font-weight: bold; }
+        .slider-container input { flex: 1; }
+        .controls { margin-top: 20px; padding: 15px; background: #eee; border-radius: 8px; }
+        .buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        #reset { background-color: #e74c3c; color: white; }
+        #download { background-color: #2ecc71; color: white; }
+        .preview-box { text-align: center; margin-bottom: 20px; }
+    </style>
 </head>
 <body>
-<h1>Editor Immagini</h1>
-<input type="file" id="upload" accept="image/*"/>
-<div>
-    <h2>Anteprima Immagine</h2>
-    <img id="original" src="" alt="Originale"/>
-    <img id="preview" src="" alt="Modificata"/>
-</div>
 
-<div class="slider-container">
-  <label for="brightness">Luminosità</label>
-  <input type="range" id="brightness" min="0" max="2" step="0.01" value="1"/>
-</div>
-<div class="slider-container">
-  <label for="contrast">Contrasto</label>
-  <input type="range" id="contrast" min="0" max="2" step="0.01" value="1"/>
-</div>
-<div class="slider-container">
-  <label for="saturation">Saturazione</label>
-  <input type="range" id="saturation" min="0" max="2" step="0.01" value="1"/>
-</div>
-<div class="slider-container">
-  <label for="blur">Blur</label>
-  <input type="range" id="blur" min="0" max="10" step="0.1" value="0"/>
-</div>
-<div class="slider-container">
-  <label for="rotate">Rotazione (gradi)</label>
-  <input type="range" id="rotate" min="0" max="360" step="1" value="0"/>
-</div>
+<div class="container">
+    <h1>Editor Immagini</h1>
+    
+    <div style="text-align: center; margin-bottom: 20px;">
+        <input type="file" id="upload" accept="image/*"/>
+    </div>
 
-<button id="reset">Resetta</button>
-<button id="download">Scarica Immagine</button>
+    <div class="preview-box">
+        <h3>Anteprima Modificata</h3>
+        <img id="preview" src="" alt="Carica un'immagine per iniziare"/>
+        <p><small>Immagine originale (nascosta):</small></p>
+        <img id="original" src="" alt="" style="display:none;"/>
+    </div>
+
+    <div class="controls">
+        <div class="slider-container">
+            <label for="brightness">Luminosità</label>
+            <input type="range" id="brightness" min="0" max="2" step="0.01" value="1"/>
+        </div>
+        <div class="slider-container">
+            <label for="contrast">Contrasto</label>
+            <input type="range" id="contrast" min="0" max="2" step="0.01" value="1"/>
+        </div>
+        <div class="slider-container">
+            <label for="saturation">Saturazione</label>
+            <input type="range" id="saturation" min="0" max="2" step="0.01" value="1"/>
+        </div>
+        <div class="slider-container">
+            <label for="blur">Blur (Sfocatura)</label>
+            <input type="range" id="blur" min="0" max="10" step="0.1" value="0"/>
+        </div>
+        <div class="slider-container">
+            <label for="rotate">Rotazione</label>
+            <input type="range" id="rotate" min="0" max="360" step="1" value="0"/>
+        </div>
+    </div>
+
+    <div class="buttons">
+        <button id="reset">Resetta filtri</button>
+        <button id="download">Scarica Risultato</button>
+    </div>
+</div>
 
 <script>
-let originalImage = "";
 let currentFilename = "";
 let tempFilename = "";
 
-// Gestione caricamento immagine
+// 1. Caricamento file
 document.getElementById('upload').addEventListener('change', function(e) {
     const file = e.target.files[0];
+    if (!file) return;
+
     const formData = new FormData();
     formData.append('file', file);
+
     fetch('/api/upload', {
         method: 'POST',
         body: formData
-    }).then(res => res.json())
+    })
+    .then(res => res.json())
     .then(data => {
         currentFilename = data.filename;
-        document.getElementById('original').src = '/static/uploads/' + currentFilename;
-        document.getElementById('preview').src = '/static/uploads/' + currentFilename;
-        resetSliders();
-    });
+        // Percorsi aggiornati per la rotta /get-img/ di Vercel
+        document.getElementById('original').src = '/get-img/' + currentFilename;
+        document.getElementById('preview').src = '/get-img/' + currentFilename;
+        resetSlidersUI();
+    })
+    .catch(err => console.error("Errore upload:", err));
 });
 
-// Funzione per resettare gli slider
-function resetSliders() {
+// 2. Applicazione filtri (chiamata al server)
+function applyFilters() {
+    if (!currentFilename) return;
+
+    const values = {
+        brightness: document.getElementById('brightness').value,
+        contrast: document.getElementById('contrast').value,
+        saturation: document.getElementById('saturation').value,
+        blur: document.getElementById('blur').value,
+        rotate: document.getElementById('rotate').value
+    };
+
+    fetch('/api/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            filename: currentFilename,
+            value: values
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        tempFilename = data.temp_filename;
+        // Aggiorna l'anteprima con il file temporaneo creato in /tmp
+        document.getElementById('preview').src = '/get-img/' + tempFilename;
+    })
+    .catch(err => console.error("Errore modifica:", err));
+}
+
+// 3. Eventi Slider
+const sliders = ['brightness', 'contrast', 'saturation', 'blur', 'rotate'];
+sliders.forEach(id => {
+    document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+// 4. Reset
+function resetSlidersUI() {
     document.getElementById('brightness').value = 1;
     document.getElementById('contrast').value = 1;
     document.getElementById('saturation').value = 1;
@@ -74,47 +136,19 @@ function resetSliders() {
     document.getElementById('rotate').value = 0;
 }
 
-// Ascolto sugli slider
-const sliders = ['brightness','contrast','saturation','blur','rotate'];
-sliders.forEach(id => {
-    document.getElementById(id).addEventListener('input', applyFilters);
-});
-
-// Pulsante reset
 document.getElementById('reset').addEventListener('click', () => {
-    resetSliders();
+    resetSlidersUI();
     applyFilters();
 });
 
-// Pulsante download
+// 5. Download
 document.getElementById('download').addEventListener('click', () => {
-    if (tempFilename) {
-        window.location.href = '/static/uploads/' + tempFilename + '?download=true';
+    const fileToDownload = tempFilename || currentFilename;
+    if (fileToDownload) {
+        window.location.href = '/get-img/' + fileToDownload + '?download=true';
     }
 });
-
-// Applicare le modifiche
-function applyFilters() {
-    const brightness = parseFloat(document.getElementById('brightness').value);
-    const contrast = parseFloat(document.getElementById('contrast').value);
-    const saturation = parseFloat(document.getElementById('saturation').value);
-    const blur = parseFloat(document.getElementById('blur').value);
-    const rotate = parseInt(document.getElementById('rotate').value);
-
-    fetch('/api/edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            filename: currentFilename,
-            action: 'apply',
-            value: { brightness, contrast, saturation, blur, rotate }
-        })
-    }).then(res => res.json())
-    .then(data => {
-        tempFilename = data.temp_filename;
-        document.getElementById('preview').src = '/static/uploads/' + tempFilename;
-    });
-}
 </script>
+
 </body>
 </html>
