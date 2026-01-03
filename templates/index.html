@@ -2,98 +2,221 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Google Photos Style Editor</title>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@400&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Photo Editor - Ultra Fast</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root { --blue: #1a73e8; --gray: #5f6368; }
-        body { font-family: 'Roboto', sans-serif; margin: 0; background: #f8f9fa; display: flex; flex-direction: column; height: 100vh; }
-        header { background: white; padding: 10px 20px; border-bottom: 1px solid #dadce0; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-family: 'Google Sans'; font-size: 22px; color: var(--gray); }
-        main { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 300px; background: white; border-right: 1px solid #dadce0; padding: 20px; }
-        .viewport { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .img-card { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 90%; max-height: 90%; }
-        #display-image { max-width: 100%; max-height: 70vh; border-radius: 4px; display: none; }
-        .control { margin-bottom: 20px; }
-        label { display: block; font-size: 13px; color: var(--gray); font-weight: 500; margin-bottom: 5px; }
-        input[type=range] { width: 100%; accent-color: var(--blue); }
-        .btn { background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: 'Google Sans'; }
-        .btn:disabled { background: #ccc; }
+        :root {
+            --google-blue: #1a73e8;
+            --google-gray: #5f6368;
+            --border: #dadce0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            color: #202124;
+        }
+
+        /* Header */
+        header {
+            background: #fff;
+            padding: 8px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .logo {
+            font-family: 'Google Sans';
+            font-size: 22px;
+            color: var(--google-gray);
+            font-weight: 500;
+        }
+
+        /* Layout */
+        main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .viewport {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            background: #e9eaed;
+        }
+
+        /* Image Display */
+        .canvas-container {
+            position: relative;
+            background: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 95%;
+            max-height: 95%;
+            transition: opacity 0.1s ease;
+        }
+
+        #display-image {
+            display: block;
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 4px;
+        }
+
+        .processing { opacity: 0.6; }
+
+        /* Controls */
+        .control-item { margin-bottom: 22px; }
+        
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--google-gray);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #dfe1e5;
+            border-radius: 2px;
+            appearance: none;
+            accent-color: var(--google-blue);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 24px;
+            border-radius: 4px;
+            font-family: 'Google Sans';
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: var(--google-blue); color: #fff; }
+        .btn-primary:hover { background: #1765cc; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--google-blue); margin-right: 8px; }
+
+        #placeholder { color: var(--google-gray); text-align: center; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo">Gallery AI</div>
-    <div>
-        <input type="file" id="fileInput" hidden onchange="uploadImage()">
-        <button class="btn" onclick="document.getElementById('fileInput').click()">Carica Foto</button>
-        <a id="downloadBtn" href="#" download="edit.png" style="display:none; margin-left:10px;">
-            <button class="btn" style="background: #34a853;">Scarica</button>
+    <div class="logo">Gallery Editor AI</div>
+    <div class="actions">
+        <input type="file" id="fileInput" hidden accept="image/*" onchange="handleUpload()">
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Sostituisci</button>
+        <a id="downloadLink" href="#" download="edited_photo.jpg">
+            <button class="btn btn-primary">Scarica Risultato</button>
         </a>
     </div>
 </header>
 
 <main>
     <aside class="sidebar">
-        <div class="control">
-            <label>Luminosità</label>
-            <input type="range" id="brightness" min="0.5" max="2" step="0.1" value="1" oninput="applyEdit()">
+        <div class="control-item">
+            <label>Luminosità <span id="val-brightness">1.0</span></label>
+            <input type="range" id="brightness" min="0.5" max="2" step="0.1" value="1" oninput="updateUI('brightness'); fastEdit()">
         </div>
-        <div class="control">
-            <label>Contrasto</label>
-            <input type="range" id="contrast" min="0.5" max="2" step="0.1" value="1" oninput="applyEdit()">
+        <div class="control-item">
+            <label>Contrasto <span id="val-contrast">1.0</span></label>
+            <input type="range" id="contrast" min="0.5" max="2" step="0.1" value="1" oninput="updateUI('contrast'); fastEdit()">
         </div>
-        <div class="control">
-            <label>Saturazione</label>
-            <input type="range" id="saturation" min="0" max="2" step="0.1" value="1" oninput="applyEdit()">
+        <div class="control-item">
+            <label>Saturazione <span id="val-saturation">1.0</span></label>
+            <input type="range" id="saturation" min="0" max="2" step="0.1" value="1" oninput="updateUI('saturation'); fastEdit()">
         </div>
-        <div class="control">
-            <label>Sfocatura</label>
-            <input type="range" id="blur" min="0" max="5" step="0.5" value="0" oninput="applyEdit()">
+        <div class="control-item">
+            <label>Sfocatura <span id="val-blur">0</span></label>
+            <input type="range" id="blur" min="0" max="5" step="0.5" value="0" oninput="updateUI('blur'); fastEdit()">
         </div>
-        <div class="control">
-            <label>Rotazione</label>
-            <input type="range" id="rotate" min="0" max="270" step="90" value="0" oninput="applyEdit()">
+        <div class="control-item">
+            <label>Rotazione <span id="val-rotate">0°</span></label>
+            <input type="range" id="rotate" min="0" max="270" step="90" value="0" oninput="updateUI('rotate'); fastEdit()">
         </div>
+        
+        <button class="btn btn-outline" style="width: 100%; margin-top: 20px;" onclick="resetFilters()">Reset Filtri</button>
     </aside>
 
     <section class="viewport">
-        <div class="img-card" id="card">
-            <p id="placeholder">Seleziona un'immagine per iniziare</p>
-            <img id="display-image">
+        <div id="placeholder">
+            <p>Trascina qui un'immagine o usa il tasto Carica</p>
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Scegli File</button>
+        </div>
+        <div class="canvas-container" id="canvasContainer" style="display: none;">
+            <img id="display-image" src="" alt="Anteprima">
         </div>
     </section>
 </main>
 
 <script>
-    let currentFile = "";
-    let timer;
+    let currentFilename = "";
+    let isProcessing = false;
+    let debounceTimer;
 
-    async function uploadImage() {
-        const file = document.getElementById('fileInput').files[0];
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        
-        currentFile = data.filename;
-        const img = document.getElementById('display-image');
-        img.src = `/get-img/${currentFile}`;
-        img.style.display = "block";
-        document.getElementById('placeholder').style.display = "none";
-        document.getElementById('downloadBtn').style.display = "inline-block";
+    // Aggiorna i numeretti accanto ai label
+    function updateUI(id) {
+        let val = document.getElementById(id).value;
+        document.getElementById(`val-${id}`).innerText = (id === 'rotate') ? val + '°' : val;
     }
 
-    function applyEdit() {
-        if (!currentFile) return;
-        clearTimeout(timer);
+    async function handleUpload() {
+        const file = document.getElementById('fileInput').files[0];
+        if (!file) return;
+
+        const fd = new FormData();
+        fd.append('file', file);
+
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await res.json();
         
-        // Aspetta 100ms che l'utente finisca di muovere lo slider
-        timer = setTimeout(async () => {
+        currentFilename = data.filename;
+        
+        // Mostra l'immagine
+        document.getElementById('placeholder').style.display = 'none';
+        document.getElementById('canvasContainer').style.display = 'block';
+        
+        // Prima visualizzazione (diretta)
+        fastEdit(); 
+    }
+
+    function fastEdit() {
+        if (!currentFilename) return;
+
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            const container = document.getElementById('canvasContainer');
+            container.classList.add('processing');
+
             const payload = {
-                filename: currentFile,
+                filename: currentFilename,
                 value: {
                     brightness: document.getElementById('brightness').value,
                     contrast: document.getElementById('contrast').value,
@@ -103,21 +226,37 @@
                 }
             };
 
-            const res = await fetch('/api/edit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            try {
+                const res = await fetch('/api/edit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-            const data = await res.json();
-            if (data.temp_filename) {
-                // IL FIX: Aggiungiamo un timestamp (?t=...) per forzare il refresh
-                const finalUrl = `/get-img/${data.temp_filename}?t=${Date.now()}`;
-                document.getElementById('display-image').src = finalUrl;
-                document.getElementById('downloadBtn').href = finalUrl;
+                const data = await res.json();
+                
+                if (data.image) {
+                    const img = document.getElementById('display-image');
+                    img.src = data.image; // Iniezione Base64 istantanea
+                    document.getElementById('downloadLink').href = data.image;
+                }
+            } catch (err) {
+                console.error("Errore di elaborazione:", err);
+            } finally {
+                container.classList.remove('processing');
             }
-        }, 100);
+        }, 50); // 50ms di latenza per fluidità massima
+    }
+
+    function resetFilters() {
+        const filters = ['brightness', 'contrast', 'saturation', 'blur', 'rotate'];
+        filters.forEach(f => {
+            document.getElementById(f).value = (f === 'blur' || f === 'rotate') ? 0 : 1;
+            updateUI(f);
+        });
+        fastEdit();
     }
 </script>
+
 </body>
 </html>
