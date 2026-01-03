@@ -2,240 +2,122 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PhotoEditor AI - Google Style</title>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>Google Photos Style Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@400&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --google-blue: #1a73e8;
-            --google-gray: #5f6368;
-            --bg-color: #f8f9fa;
-            --surface: #ffffff;
-        }
-
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--bg-color);
-            color: #202124;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        /* Header */
-        header {
-            background: var(--surface);
-            padding: 12px 24px;
-            border-bottom: 1px solid #dadce0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo {
-            font-family: 'Google Sans', sans-serif;
-            font-size: 22px;
-            color: var(--google-gray);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Main Layout */
-        main {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        /* Sidebar Editor */
-        .sidebar {
-            width: 320px;
-            background: var(--surface);
-            border-right: 1px solid #dadce0;
-            padding: 24px;
-            overflow-y: auto;
-        }
-
-        .control-group {
-            margin-bottom: 24px;
-        }
-
-        label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: var(--google-gray);
-        }
-
-        input[type="range"] {
-            width: 100%;
-            accent-color: var(--google-blue);
-        }
-
-        /* Canvas Area */
-        .viewport {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            position: relative;
-        }
-
-        .image-container {
-            max-width: 100%;
-            max-height: 100%;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-            border-radius: 8px;
-            background: white;
-            overflow: hidden;
-        }
-
-        #display-image {
-            display: block;
-            max-width: 100%;
-            height: auto;
-        }
-
-        /* Buttons */
-        .btn {
-            background: var(--google-blue);
-            color: white;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 4px;
-            font-family: 'Google Sans', sans-serif;
-            font-weight: 500;
-            cursor: pointer;
-            transition: box-shadow 0.2s;
-        }
-
-        .btn:hover {
-            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #dadce0;
-            color: var(--google-blue);
-        }
-
-        #upload-section {
-            text-align: center;
-        }
+        :root { --blue: #1a73e8; --gray: #5f6368; }
+        body { font-family: 'Roboto', sans-serif; margin: 0; background: #f8f9fa; display: flex; flex-direction: column; height: 100vh; }
+        header { background: white; padding: 10px 20px; border-bottom: 1px solid #dadce0; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-family: 'Google Sans'; font-size: 22px; color: var(--gray); }
+        main { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 300px; background: white; border-right: 1px solid #dadce0; padding: 20px; }
+        .viewport { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .img-card { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 90%; max-height: 90%; }
+        #display-image { max-width: 100%; max-height: 70vh; border-radius: 4px; display: none; }
+        .control { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; color: var(--gray); font-weight: 500; margin-bottom: 5px; }
+        input[type=range] { width: 100%; accent-color: var(--blue); }
+        .btn { background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: 'Google Sans'; }
+        .btn:disabled { background: #ccc; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo">📸 <span>Gallery Editor</span></div>
+    <div class="logo">Gallery AI</div>
     <div>
-        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Carica</button>
-        <a id="download-link" href="#" download="edited-image.png">
-            <button class="btn" style="margin-left: 10px;">Salva</button>
+        <input type="file" id="fileInput" hidden onchange="uploadImage()">
+        <button class="btn" onclick="document.getElementById('fileInput').click()">Carica Foto</button>
+        <a id="downloadBtn" href="#" download="edit.png" style="display:none; margin-left:10px;">
+            <button class="btn" style="background: #34a853;">Scarica</button>
         </a>
     </div>
 </header>
 
 <main>
     <aside class="sidebar">
-        <input type="file" id="fileInput" hidden accept="image/*">
-        
-        <div class="control-group">
+        <div class="control">
             <label>Luminosità</label>
             <input type="range" id="brightness" min="0.5" max="2" step="0.1" value="1" oninput="applyEdit()">
         </div>
-
-        <div class="control-group">
+        <div class="control">
             <label>Contrasto</label>
             <input type="range" id="contrast" min="0.5" max="2" step="0.1" value="1" oninput="applyEdit()">
         </div>
-
-        <div class="control-group">
+        <div class="control">
             <label>Saturazione</label>
             <input type="range" id="saturation" min="0" max="2" step="0.1" value="1" oninput="applyEdit()">
         </div>
-
-        <div class="control-group">
+        <div class="control">
             <label>Sfocatura</label>
             <input type="range" id="blur" min="0" max="5" step="0.5" value="0" oninput="applyEdit()">
         </div>
-
-        <div class="control-group">
+        <div class="control">
             <label>Rotazione</label>
-            <input type="range" id="rotate" min="0" max="360" step="90" value="0" oninput="applyEdit()">
+            <input type="range" id="rotate" min="0" max="270" step="90" value="0" oninput="applyEdit()">
         </div>
     </aside>
 
     <section class="viewport">
-        <div id="upload-prompt" style="text-align: center;">
-            <p style="color: var(--google-gray);">Nessuna immagine caricata</p>
-        </div>
-        <div class="image-container" id="result-container" style="display: none;">
-            <img id="display-image" src="" alt="Preview">
+        <div class="img-card" id="card">
+            <p id="placeholder">Seleziona un'immagine per iniziare</p>
+            <img id="display-image">
         </div>
     </section>
 </main>
 
 <script>
-    let currentFilename = "";
+    let currentFile = "";
+    let timer;
 
-    // 1. GESTIONE UPLOAD
-    document.getElementById('fileInput').onchange = async function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
+    async function uploadImage() {
+        const file = document.getElementById('fileInput').files[0];
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        });
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        currentFile = data.filename;
+        const img = document.getElementById('display-image');
+        img.src = `/get-img/${currentFile}`;
+        img.style.display = "block";
+        document.getElementById('placeholder').style.display = "none";
+        document.getElementById('downloadBtn').style.display = "inline-block";
+    }
 
-        const data = await response.json();
-        currentFilename = data.filename;
-
-        // Mostra l'immagine originale
-        document.getElementById('upload-prompt').style.display = 'none';
-        document.getElementById('result-container').style.display = 'block';
-        document.getElementById('display-image').src = `/get-img/${currentFilename}`;
-    };
-
-    // 2. GESTIONE EDITING (Debounce per non intasare il server)
-    let timeout = null;
     function applyEdit() {
-        clearTimeout(timeout);
-        timeout = setTimeout(async () => {
-            if (!currentFilename) return;
-
-            const values = {
-                brightness: document.getElementById('brightness').value,
-                contrast: document.getElementById('contrast').value,
-                saturation: document.getElementById('saturation').value,
-                blur: document.getElementById('blur').value,
-                rotate: document.getElementById('rotate').value
+        if (!currentFile) return;
+        clearTimeout(timer);
+        
+        // Aspetta 100ms che l'utente finisca di muovere lo slider
+        timer = setTimeout(async () => {
+            const payload = {
+                filename: currentFile,
+                value: {
+                    brightness: document.getElementById('brightness').value,
+                    contrast: document.getElementById('contrast').value,
+                    saturation: document.getElementById('saturation').value,
+                    blur: document.getElementById('blur').value,
+                    rotate: document.getElementById('rotate').value
+                }
             };
 
-            const response = await fetch('/api/edit', {
+            const res = await fetch('/api/edit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    filename: currentFilename,
-                    value: values
-                })
+                body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
-            const newUrl = `/get-img/${data.temp_filename}`;
-            document.getElementById('display-image').src = newUrl;
-            document.getElementById('download-link').href = newUrl;
-        }, 150); // Attende 150ms dopo l'ultimo movimento dello slider
+            const data = await res.json();
+            if (data.temp_filename) {
+                // IL FIX: Aggiungiamo un timestamp (?t=...) per forzare il refresh
+                const finalUrl = `/get-img/${data.temp_filename}?t=${Date.now()}`;
+                document.getElementById('display-image').src = finalUrl;
+                document.getElementById('downloadBtn').href = finalUrl;
+            }
+        }, 100);
     }
 </script>
-
 </body>
 </html>
