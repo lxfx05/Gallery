@@ -1,3 +1,1 @@
-flask
-Pillow
-gunicorn
+pip freeze > requirements.txt.
