@@ -32,7 +32,6 @@ A lightweight, serverless web application built with **Flask** and **Pillow** th
 
 ````
 
----
 
 ## 🚀 Deployment on Vercel
 
@@ -69,4 +68,4 @@ Distributed under the MIT License.
 
 ---
 
-### Made with ❤️ for developers. 👨‍💻
+### Made with ❤️ for developers 👨‍💻
