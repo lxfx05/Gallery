@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Editor Immagini</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  #original, #preview { max-width: 100%; margin-top: 10px; }
+  .slider-container { margin: 10px 0; }
+</style>
+</head>
+<body>
+<h1>Editor Immagini</h1>
+<input type="file" id="upload" accept="image/*"/>
+<div>
+    <h2>Anteprima Immagine</h2>
+    <img id="original" src="" alt="Originale"/>
+    <img id="preview" src="" alt="Modificata"/>
+</div>
+
+<div class="slider-container">
+  <label for="brightness">Luminosità</label>
+  <input type="range" id="brightness" min="0" max="2" step="0.01" value="1"/>
+</div>
+<div class="slider-container">
+  <label for="contrast">Contrasto</label>
+  <input type="range" id="contrast" min="0" max="2" step="0.01" value="1"/>
+</div>
+<div class="slider-container">
+  <label for="saturation">Saturazione</label>
+  <input type="range" id="saturation" min="0" max="2" step="0.01" value="1"/>
+</div>
+<div class="slider-container">
+  <label for="blur">Blur</label>
+  <input type="range" id="blur" min="0" max="10" step="0.1" value="0"/>
+</div>
+<div class="slider-container">
+  <label for="rotate">Rotazione (gradi)</label>
+  <input type="range" id="rotate" min="0" max="360" step="1" value="0"/>
+</div>
+
+<button id="reset">Resetta</button>
+<button id="download">Scarica Immagine</button>
+
+<script>
+let originalImage = "";
+let currentFilename = "";
+let tempFilename = "";
+
+// Gestione caricamento immagine
+document.getElementById('upload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+    }).then(res => res.json())
+    .then(data => {
+        currentFilename = data.filename;
+        document.getElementById('original').src = '/static/uploads/' + currentFilename;
+        document.getElementById('preview').src = '/static/uploads/' + currentFilename;
+        resetSliders();
+    });
+});
+
+// Funzione per resettare gli slider
+function resetSliders() {
+    document.getElementById('brightness').value = 1;
+    document.getElementById('contrast').value = 1;
+    document.getElementById('saturation').value = 1;
+    document.getElementById('blur').value = 0;
+    document.getElementById('rotate').value = 0;
+}
+
+// Ascolto sugli slider
+const sliders = ['brightness','contrast','saturation','blur','rotate'];
+sliders.forEach(id => {
+    document.getElementById(id).addEventListener('input', applyFilters);
+});
+
+// Pulsante reset
+document.getElementById('reset').addEventListener('click', () => {
+    resetSliders();
+    applyFilters();
+});
+
+// Pulsante download
+document.getElementById('download').addEventListener('click', () => {
+    if (tempFilename) {
+        window.location.href = '/static/uploads/' + tempFilename + '?download=true';
+    }
+});
+
+// Applicare le modifiche
+function applyFilters() {
+    const brightness = parseFloat(document.getElementById('brightness').value);
+    const contrast = parseFloat(document.getElementById('contrast').value);
+    const saturation = parseFloat(document.getElementById('saturation').value);
+    const blur = parseFloat(document.getElementById('blur').value);
+    const rotate = parseInt(document.getElementById('rotate').value);
+
+    fetch('/api/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            filename: currentFilename,
+            action: 'apply',
+            value: { brightness, contrast, saturation, blur, rotate }
+        })
+    }).then(res => res.json())
+    .then(data => {
+        tempFilename = data.temp_filename;
+        document.getElementById('preview').src = '/static/uploads/' + tempFilename;
+    });
+}
+</script>
+</body>
+</html>
