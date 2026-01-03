@@ -1,153 +1,240 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Editor Immagini - Vercel</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhotoEditor AI - Google Style</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #444; }
-        #original, #preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 4px; display: block; margin-left: auto; margin-right: auto; }
-        .slider-container { margin: 15px 0; display: flex; align-items: center; }
-        .slider-container label { width: 150px; font-weight: bold; }
-        .slider-container input { flex: 1; }
-        .controls { margin-top: 20px; padding: 15px; background: #eee; border-radius: 8px; }
-        .buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
-        #reset { background-color: #e74c3c; color: white; }
-        #download { background-color: #2ecc71; color: white; }
-        .preview-box { text-align: center; margin-bottom: 20px; }
+        :root {
+            --google-blue: #1a73e8;
+            --google-gray: #5f6368;
+            --bg-color: #f8f9fa;
+            --surface: #ffffff;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: #202124;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: var(--surface);
+            padding: 12px 24px;
+            border-bottom: 1px solid #dadce0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: 'Google Sans', sans-serif;
+            font-size: 22px;
+            color: var(--google-gray);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Main Layout */
+        main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar Editor */
+        .sidebar {
+            width: 320px;
+            background: var(--surface);
+            border-right: 1px solid #dadce0;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--google-gray);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--google-blue);
+        }
+
+        /* Canvas Area */
+        .viewport {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        .image-container {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            border-radius: 8px;
+            background: white;
+            overflow: hidden;
+        }
+
+        #display-image {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--google-blue);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-family: 'Google Sans', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #dadce0;
+            color: var(--google-blue);
+        }
+
+        #upload-section {
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Editor Immagini</h1>
-    
-    <div style="text-align: center; margin-bottom: 20px;">
-        <input type="file" id="upload" accept="image/*"/>
+<header>
+    <div class="logo">📸 <span>Gallery Editor</span></div>
+    <div>
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Carica</button>
+        <a id="download-link" href="#" download="edited-image.png">
+            <button class="btn" style="margin-left: 10px;">Salva</button>
+        </a>
     </div>
+</header>
 
-    <div class="preview-box">
-        <h3>Anteprima Modificata</h3>
-        <img id="preview" src="" alt="Carica un'immagine per iniziare"/>
-        <p><small>Immagine originale (nascosta):</small></p>
-        <img id="original" src="" alt="" style="display:none;"/>
-    </div>
+<main>
+    <aside class="sidebar">
+        <input type="file" id="fileInput" hidden accept="image/*">
+        
+        <div class="control-group">
+            <label>Luminosità</label>
+            <input type="range" id="brightness" min="0.5" max="2" step="0.1" value="1" oninput="applyEdit()">
+        </div>
 
-    <div class="controls">
-        <div class="slider-container">
-            <label for="brightness">Luminosità</label>
-            <input type="range" id="brightness" min="0" max="2" step="0.01" value="1"/>
+        <div class="control-group">
+            <label>Contrasto</label>
+            <input type="range" id="contrast" min="0.5" max="2" step="0.1" value="1" oninput="applyEdit()">
         </div>
-        <div class="slider-container">
-            <label for="contrast">Contrasto</label>
-            <input type="range" id="contrast" min="0" max="2" step="0.01" value="1"/>
-        </div>
-        <div class="slider-container">
-            <label for="saturation">Saturazione</label>
-            <input type="range" id="saturation" min="0" max="2" step="0.01" value="1"/>
-        </div>
-        <div class="slider-container">
-            <label for="blur">Blur (Sfocatura)</label>
-            <input type="range" id="blur" min="0" max="10" step="0.1" value="0"/>
-        </div>
-        <div class="slider-container">
-            <label for="rotate">Rotazione</label>
-            <input type="range" id="rotate" min="0" max="360" step="1" value="0"/>
-        </div>
-    </div>
 
-    <div class="buttons">
-        <button id="reset">Resetta filtri</button>
-        <button id="download">Scarica Risultato</button>
-    </div>
-</div>
+        <div class="control-group">
+            <label>Saturazione</label>
+            <input type="range" id="saturation" min="0" max="2" step="0.1" value="1" oninput="applyEdit()">
+        </div>
+
+        <div class="control-group">
+            <label>Sfocatura</label>
+            <input type="range" id="blur" min="0" max="5" step="0.5" value="0" oninput="applyEdit()">
+        </div>
+
+        <div class="control-group">
+            <label>Rotazione</label>
+            <input type="range" id="rotate" min="0" max="360" step="90" value="0" oninput="applyEdit()">
+        </div>
+    </aside>
+
+    <section class="viewport">
+        <div id="upload-prompt" style="text-align: center;">
+            <p style="color: var(--google-gray);">Nessuna immagine caricata</p>
+        </div>
+        <div class="image-container" id="result-container" style="display: none;">
+            <img id="display-image" src="" alt="Preview">
+        </div>
+    </section>
+</main>
 
 <script>
-let currentFilename = "";
-let tempFilename = "";
+    let currentFilename = "";
 
-// 1. Caricamento file
-document.getElementById('upload').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    // 1. GESTIONE UPLOAD
+    document.getElementById('fileInput').onchange = async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
+        const formData = new FormData();
+        formData.append('file', file);
 
-    fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
         currentFilename = data.filename;
-        // Percorsi aggiornati per la rotta /get-img/ di Vercel
-        document.getElementById('original').src = '/get-img/' + currentFilename;
-        document.getElementById('preview').src = '/get-img/' + currentFilename;
-        resetSlidersUI();
-    })
-    .catch(err => console.error("Errore upload:", err));
-});
 
-// 2. Applicazione filtri (chiamata al server)
-function applyFilters() {
-    if (!currentFilename) return;
-
-    const values = {
-        brightness: document.getElementById('brightness').value,
-        contrast: document.getElementById('contrast').value,
-        saturation: document.getElementById('saturation').value,
-        blur: document.getElementById('blur').value,
-        rotate: document.getElementById('rotate').value
+        // Mostra l'immagine originale
+        document.getElementById('upload-prompt').style.display = 'none';
+        document.getElementById('result-container').style.display = 'block';
+        document.getElementById('display-image').src = `/get-img/${currentFilename}`;
     };
 
-    fetch('/api/edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            filename: currentFilename,
-            value: values
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        tempFilename = data.temp_filename;
-        // Aggiorna l'anteprima con il file temporaneo creato in /tmp
-        document.getElementById('preview').src = '/get-img/' + tempFilename;
-    })
-    .catch(err => console.error("Errore modifica:", err));
-}
+    // 2. GESTIONE EDITING (Debounce per non intasare il server)
+    let timeout = null;
+    function applyEdit() {
+        clearTimeout(timeout);
+        timeout = setTimeout(async () => {
+            if (!currentFilename) return;
 
-// 3. Eventi Slider
-const sliders = ['brightness', 'contrast', 'saturation', 'blur', 'rotate'];
-sliders.forEach(id => {
-    document.getElementById(id).addEventListener('change', applyFilters);
-});
+            const values = {
+                brightness: document.getElementById('brightness').value,
+                contrast: document.getElementById('contrast').value,
+                saturation: document.getElementById('saturation').value,
+                blur: document.getElementById('blur').value,
+                rotate: document.getElementById('rotate').value
+            };
 
-// 4. Reset
-function resetSlidersUI() {
-    document.getElementById('brightness').value = 1;
-    document.getElementById('contrast').value = 1;
-    document.getElementById('saturation').value = 1;
-    document.getElementById('blur').value = 0;
-    document.getElementById('rotate').value = 0;
-}
+            const response = await fetch('/api/edit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filename: currentFilename,
+                    value: values
+                })
+            });
 
-document.getElementById('reset').addEventListener('click', () => {
-    resetSlidersUI();
-    applyFilters();
-});
-
-// 5. Download
-document.getElementById('download').addEventListener('click', () => {
-    const fileToDownload = tempFilename || currentFilename;
-    if (fileToDownload) {
-        window.location.href = '/get-img/' + fileToDownload + '?download=true';
+            const data = await response.json();
+            const newUrl = `/get-img/${data.temp_filename}`;
+            document.getElementById('display-image').src = newUrl;
+            document.getElementById('download-link').href = newUrl;
+        }, 150); // Attende 150ms dopo l'ultimo movimento dello slider
     }
-});
 </script>
 
 </body>
