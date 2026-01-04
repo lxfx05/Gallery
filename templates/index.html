@@ -1,48 +1,245 @@
-// Sostituisci le funzioni handleUpload e fastEdit con queste:
-
-async function handleUpload() {
-    const file = document.getElementById('fileInput').files[0];
-    if (!file) return;
-
-    const fd = new FormData();
-    fd.append('file', file);
-
-    const res = await fetch('/api/upload', { method: 'POST', body: fd });
-    const data = await res.json();
-    
-    currentFilename = data.filename;
-    
-    // Mostra subito l'immagine originale ricevuta in base64
-    document.getElementById('placeholder').style.display = 'none';
-    document.getElementById('canvasContainer').style.display = 'block';
-    document.getElementById('display-image').src = data.initial_image;
-}
-
-async function fastEdit() {
-    if (!currentFilename) return;
-
-    const payload = {
-        filename: currentFilename,
-        value: {
-            brightness: document.getElementById('brightness').value,
-            contrast: document.getElementById('contrast').value,
-            saturation: document.getElementById('saturation').value,
-            blur: document.getElementById('blur').value,
-            rotate: document.getElementById('rotate').value
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>iEditor 26</title>
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ios-blur: blur(25px);
+            --glass-bg: rgba(28, 28, 30, 0.3); /* Black Material Glass al 30% */
+            --ios-blue: #007aff;
+            --ios-text: #ffffff;
         }
-    };
 
-    // Invio immediato
-    const res = await fetch('/api/edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+        body {
+            font-family: -apple-system, 'SF Pro Display', sans-serif;
+            background: #000; /* Sfondo nero profondo per far risaltare il vetro */
+            background-image: radial-gradient(circle at 50% 50%, #1c1c1e 0%, #000 100%);
+            margin: 0;
+            color: var(--ios-text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-    const data = await res.json();
-    if (data.image) {
-        // Aggiornamento atomico del DOM
-        document.getElementById('display-image').src = data.image;
-        document.getElementById('downloadLink').href = data.image;
+        /* Navigazione Superiore */
+        header {
+            backdrop-filter: var(--ios-blur);
+            background: var(--glass-bg);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 0.5px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+
+        .logo { font-weight: 600; font-size: 20px; letter-spacing: -0.5px; }
+
+        /* Layout principale */
+        main {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 60px);
+        }
+
+        /* Sidebar iOS Glass */
+        .sidebar {
+            width: 320px;
+            backdrop-filter: var(--ios-blur);
+            background: var(--glass-bg);
+            padding: 25px;
+            border-right: 0.5px solid rgba(255,255,255,0.1);
+            overflow-y: auto;
+        }
+
+        .viewport {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            perspective: 1000px;
+        }
+
+        .img-container {
+            position: relative;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #1c1c1e;
+        }
+
+        #display-image {
+            max-width: 100%;
+            max-height: 75vh;
+            display: block;
+        }
+
+        /* Controlli iOS */
+        .control-group { margin-bottom: 30px; }
+        
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 300;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Bottoni iOS */
+        .ios-btn {
+            background: var(--ios-blue);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 15px;
+            transition: transform 0.1s;
+        }
+
+        .ios-btn:active { transform: scale(0.95); }
+
+        .btn-ghost {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">Foto</div>
+    <div style="display: flex; gap: 15px;">
+        <input type="file" id="fileInput" hidden onchange="uploadImage()">
+        <button class="ios-btn btn-ghost" onclick="document.getElementById('fileInput').click()">Aggiungi</button>
+        <a id="downloadBtn" href="#" download="iOS_Edit.jpg" style="display:none;">
+            <button class="ios-btn">Salva</button>
+        </a>
+    </div>
+</header>
+
+<main>
+    <aside class="sidebar">
+        <div class="control-group">
+            <label>Esposizione <span id="v-brightness">1</span></label>
+            <input type="range" id="brightness" min="0.5" max="2" step="0.05" value="1" oninput="liveEdit()">
+        </div>
+        <div class="control-group">
+            <label>Contrasto <span id="v-contrast">1</span></label>
+            <input type="range" id="contrast" min="0.5" max="2" step="0.05" value="1" oninput="liveEdit()">
+        </div>
+        <div class="control-group">
+            <label>Vividezza <span id="v-saturation">1</span></label>
+            <input type="range" id="saturation" min="0" max="2" step="0.05" value="1" oninput="liveEdit()">
+        </div>
+        <div class="control-group">
+            <label>Sfocatura <span id="v-blur">0</span></label>
+            <input type="range" id="blur" min="0" max="10" step="0.5" value="0" oninput="liveEdit()">
+        </div>
+        <div class="control-group">
+            <label>Angolo <span id="v-rotate">0°</span></label>
+            <input type="range" id="rotate" min="0" max="270" step="90" value="0" oninput="liveEdit()">
+        </div>
+        <button class="ios-btn btn-ghost" style="width: 100%; margin-top: 20px;" onclick="location.reload()">Reset</button>
+    </aside>
+
+    <section class="viewport">
+        <div class="img-container" id="canvasFrame" style="display:none;">
+            <img id="display-image">
+        </div>
+        <div id="no-image" style="text-align: center; opacity: 0.5;">
+            <p>Nessuna foto selezionata</p>
+        </div>
+    </section>
+</main>
+
+<script>
+    let currentFile = "";
+    let isWorking = false;
+
+    async function uploadImage() {
+        const file = document.getElementById('fileInput').files[0];
+        const fd = new FormData();
+        fd.append('file', file);
+
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        
+        currentFile = data.filename;
+        
+        // Risultato immediato tramite Base64 ricevuto dall'upload
+        document.getElementById('display-image').src = data.initial_image;
+        document.getElementById('canvasFrame').style.display = "block";
+        document.getElementById('no-image').style.display = "none";
+        document.getElementById('downloadBtn').style.display = "block";
     }
-}
+
+    async function liveEdit() {
+        if (!currentFile || isWorking) return;
+        
+        isWorking = true;
+        
+        // Aggiorna etichette UI
+        ['brightness', 'contrast', 'saturation', 'blur', 'rotate'].forEach(id => {
+            document.getElementById(`v-${id}`).innerText = document.getElementById(id).value;
+        });
+
+        const payload = {
+            filename: currentFile,
+            value: {
+                brightness: document.getElementById('brightness').value,
+                contrast: document.getElementById('contrast').value,
+                saturation: document.getElementById('saturation').value,
+                blur: document.getElementById('blur').value,
+                rotate: document.getElementById('rotate').value
+            }
+        };
+
+        try {
+            const res = await fetch('/api/edit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (data.image) {
+                // Sostituzione istantanea della stringa Base64
+                document.getElementById('display-image').src = data.image;
+                document.getElementById('downloadBtn').href = data.image;
+            }
+        } finally {
+            isWorking = false;
+        }
+    }
+</script>
+</body>
+</html>
